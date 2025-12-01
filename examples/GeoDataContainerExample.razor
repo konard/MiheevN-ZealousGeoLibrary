@@ -1,0 +1,217 @@
+@page "/geodata-example"
+@using ZealousMindedPeopleGeo.Services.GeoDataContainer
+@using ZealousMindedPeopleGeo.Services.Mapping
+@using ZealousMindedPeopleGeo.Models
+@using ZealousMindedPeopleGeo.Components
+@inject IGeoDataContainerManager ContainerManager
+@inject GlobeDataInitializer DataInitializer
+@inject IGlobeMediator GlobeMediator
+@inject GlobeStateService GlobeStateService
+
+<h3>Geo Data Container Example</h3>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4>Container Management</h4>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label>Container ID:</label>
+                    <input type="text" @bind="_containerId" class="form-control" />
+                </div>
+
+                <div class="btn-group mb-3">
+                    <button class="btn btn-primary" @onclick="CreateContainer">Create Container</button>
+                    <button class="btn btn-info" @onclick="LoadSampleData">Load Sample Data</button>
+                    <button class="btn btn-success" @onclick="LoadToGlobe">Load to Globe</button>
+                </div>
+
+                <div class="mb-3">
+                    <h5>Active Containers:</h5>
+                    <ul>
+                        @foreach (var id in ContainerManager.GetContainerIds())
+                        {
+                            var container = ContainerManager.GetContainer(id);
+                            <li>@id (Count: @container?.Count)</li>
+                        }
+                    </ul>
+                </div>
+
+                @if (!string.IsNullOrEmpty(_message))
+                {
+                    <div class="alert @_messageClass">@_message</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4>Add New Point</h4>
+            </div>
+            <div class="card-body">
+                <GeoDataParticipantForm
+                    DataContainerId="@_containerId"
+                    GlobeId="example"
+                    Title="Add New Point"
+                    OnParticipantAdded="HandleParticipantAdded" />
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4>3D Globe (ID: example)</h4>
+            </div>
+            <div class="card-body">
+                <CommunityGlobeViewer GlobeId="example" Width="800" Height="500" />
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4>JSON Export</h4>
+            </div>
+            <div class="card-body">
+                <button class="btn btn-secondary mb-3" @onclick="ExportToJson">Export Container to JSON</button>
+                @if (!string.IsNullOrEmpty(_jsonExport))
+                {
+                    <pre class="bg-light p-3">@_jsonExport</pre>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _containerId = "example-data";
+    private string? _message;
+    private string _messageClass = "alert-info";
+    private string? _jsonExport;
+
+    protected override void OnInitialized()
+    {
+        ContainerManager.OnDataChanged += HandleDataChanged;
+    }
+
+    private void CreateContainer()
+    {
+        var container = ContainerManager.GetOrCreateContainer(_containerId);
+        _message = $"Container '{_containerId}' created/retrieved successfully. Count: {container.Count}";
+        _messageClass = "alert-success";
+    }
+
+    private async Task LoadSampleData()
+    {
+        var sampleParticipants = new List<Participant>
+        {
+            new Participant
+            {
+                Id = Guid.NewGuid(),
+                Name = "Moscow Office",
+                Email = "moscow@example.com",
+                Address = "Moscow, Russia",
+                Location = "Moscow, Russia",
+                Latitude = 55.7558,
+                Longitude = 37.6176
+            },
+            new Participant
+            {
+                Id = Guid.NewGuid(),
+                Name = "Berlin Office",
+                Email = "berlin@example.com",
+                Address = "Berlin, Germany",
+                Location = "Berlin, Germany",
+                Latitude = 52.5200,
+                Longitude = 13.4050
+            },
+            new Participant
+            {
+                Id = Guid.NewGuid(),
+                Name = "New York Office",
+                Email = "ny@example.com",
+                Address = "New York, USA",
+                Location = "New York, USA",
+                Latitude = 40.7128,
+                Longitude = -74.0060
+            },
+            new Participant
+            {
+                Id = Guid.NewGuid(),
+                Name = "Tokyo Office",
+                Email = "tokyo@example.com",
+                Address = "Tokyo, Japan",
+                Location = "Tokyo, Japan",
+                Latitude = 35.6762,
+                Longitude = 139.6503
+            }
+        };
+
+        var result = await ContainerManager.LoadDataAsync(_containerId, sampleParticipants);
+
+        if (result.Success)
+        {
+            _message = $"Loaded {result.ProcessedCount} sample participants into '{_containerId}'";
+            _messageClass = "alert-success";
+        }
+        else
+        {
+            _message = $"Error: {result.ErrorMessage}";
+            _messageClass = "alert-danger";
+        }
+    }
+
+    private async Task LoadToGlobe()
+    {
+        var result = await ContainerManager.LoadToGlobeAsync(
+            _containerId,
+            GlobeMediator,
+            "globe-example");
+
+        if (result.Success)
+        {
+            _message = $"Loaded {result.ProcessedCount} participants to globe";
+            _messageClass = "alert-success";
+        }
+        else
+        {
+            _message = $"Error loading to globe: {result.ErrorMessage}";
+            _messageClass = "alert-danger";
+        }
+    }
+
+    private async Task ExportToJson()
+    {
+        _jsonExport = await ContainerManager.ExportToJsonAsync(_containerId);
+    }
+
+    private void HandleParticipantAdded(Participant participant)
+    {
+        _message = $"Added participant: {participant.Name} at ({participant.Latitude:F4}, {participant.Longitude:F4})";
+        _messageClass = "alert-success";
+        StateHasChanged();
+    }
+
+    private void HandleDataChanged(string containerId, GeoDataChangeType changeType)
+    {
+        if (containerId == _containerId)
+        {
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose()
+    {
+        ContainerManager.OnDataChanged -= HandleDataChanged;
+    }
+}

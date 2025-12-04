@@ -4,10 +4,13 @@
 @using Microsoft.JSInterop
 @using System.Text.Json
 @using ZealousMindedPeopleGeo.Services
+@using ZealousMindedPeopleGeo.Services.Repositories
 @using ZealousMindedPeopleGeo.Models
 @inject IJSRuntime JSRuntime
 @inject ILogger<CommunityMapComponent> Logger
 @inject IOptions<ZealousMindedPeopleGeoOptions> Options
+@inject IParticipantRepository ParticipantRepository
+@implements IAsyncDisposable
 
 <div class="community-map-container">
     <div class="map-header">
@@ -19,8 +22,17 @@
 
     <div id="map" class="map-canvas" style="height: @Height; width: 100%;"></div>
 
+    @if (_isLoading)
+    {
+        <div class="map-loading-overlay">
+            <div class="loading-spinner"></div>
+            <div>Загрузка карты...</div>
+        </div>
+    }
+
     @* Ссылки на внешние ресурсы *@
     <link href="_content/ZealousMindedPeopleGeo/css/community-map.css" rel="stylesheet" />
+    <script src="_content/ZealousMindedPeopleGeo/js/community-map.js"></script>
 
     @if (ShowParticipantsList)
     {

@@ -58,7 +58,7 @@ namespace ZealousMindedPeopleGeo
             this IServiceCollection services)
         {
             // Регистрация HTTP клиента для геокодирования
-            services.AddHttpClient<IGeocodingService, NominatimGeocodingService>(client =>
+            services.AddHttpClient<IGeocodingService, GoogleMapsGeocodingService>(client =>
             {
                 client.DefaultRequestHeaders.UserAgent.ParseAdd("ZealousMindedPeopleGeo/1.0");
             });

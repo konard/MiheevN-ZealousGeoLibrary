@@ -30,23 +30,23 @@ public class CachingService : ICachingService, IDisposable
     /// <summary>
     /// Получить данные из кэша
     /// </summary>
-    public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default)
+    public Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default)
     {
         try
         {
-            if (_memoryCache.TryGetValue(key, out T value))
+            if (_memoryCache.TryGetValue(key, out T? value))
             {
                 _logger.LogDebug("Cache hit for key: {Key}", key);
-                return value;
+                return Task.FromResult<T?>(value);
             }
 
             _logger.LogDebug("Cache miss for key: {Key}", key);
-            return default;
+            return Task.FromResult<T?>(default);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting cached value for key: {Key}", key);
-            return default;
+            return Task.FromResult<T?>(default);
         }
     }
 
@@ -61,7 +61,7 @@ public class CachingService : ICachingService, IDisposable
     {
         try
         {
-            if (_memoryCache.TryGetValue(key, out T cachedValue))
+            if (_memoryCache.TryGetValue(key, out T? cachedValue) && cachedValue != null)
             {
                 _logger.LogDebug("Cache hit for key: {Key}", key);
                 return cachedValue;
@@ -97,7 +97,7 @@ public class CachingService : ICachingService, IDisposable
     /// <summary>
     /// Установить значение в кэш
     /// </summary>
-    public async Task SetAsync<T>(
+    public Task SetAsync<T>(
         string key,
         T value,
         CachingOptions? options = null,
@@ -121,12 +121,13 @@ public class CachingService : ICachingService, IDisposable
         {
             _logger.LogError(ex, "Error setting cached value for key: {Key}", key);
         }
+        return Task.CompletedTask;
     }
 
     /// <summary>
     /// Удалить значение из кэша
     /// </summary>
-    public async Task RemoveAsync(string key, CancellationToken cancellationToken = default)
+    public Task RemoveAsync(string key, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -137,12 +138,13 @@ public class CachingService : ICachingService, IDisposable
         {
             _logger.LogError(ex, "Error removing cached value for key: {Key}", key);
         }
+        return Task.CompletedTask;
     }
 
     /// <summary>
     /// Очистить все значения из кэша
     /// </summary>
-    public async Task ClearAsync(CancellationToken cancellationToken = default)
+    public Task ClearAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -157,28 +159,29 @@ public class CachingService : ICachingService, IDisposable
         {
             _logger.LogError(ex, "Error clearing cache");
         }
+        return Task.CompletedTask;
     }
 
     /// <summary>
     /// Проверить, существует ли значение в кэше
     /// </summary>
-    public async Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default)
+    public Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default)
     {
         try
         {
-            return _memoryCache.TryGetValue(key, out _);
+            return Task.FromResult(_memoryCache.TryGetValue(key, out _));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error checking cache existence for key: {Key}", key);
-            return false;
+            return Task.FromResult(false);
         }
     }
 
     /// <summary>
     /// Получить статистику кэша
     /// </summary>
-    public async Task<CacheStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default)
+    public Task<CacheStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -193,12 +196,12 @@ public class CachingService : ICachingService, IDisposable
                 }
             }
 
-            return stats;
+            return Task.FromResult(stats);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting cache statistics");
-            return new CacheStatistics();
+            return Task.FromResult(new CacheStatistics());
         }
     }
 

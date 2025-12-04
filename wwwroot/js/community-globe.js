@@ -813,6 +813,83 @@ class CommunityGlobe {
         }
     }
 
+    toggleAtmosphere(enabled) {
+        if (enabled && !this.atmosphere) {
+            this.options.enableAtmosphereGlow = true;
+            this.createAtmosphere();
+        } else if (!enabled && this.atmosphere) {
+            this.earthGroup.remove(this.atmosphere);
+            this.atmosphere.geometry.dispose();
+            this.atmosphere.material.dispose();
+            this.atmosphere = null;
+            this.options.enableAtmosphereGlow = false;
+        }
+    }
+
+    toggleClouds(enabled) {
+        if (enabled && !this.clouds) {
+            this.options.enableClouds = true;
+            this.createClouds();
+        } else if (!enabled && this.clouds) {
+            this.earthGroup.remove(this.clouds);
+            this.clouds.geometry.dispose();
+            this.clouds.material.dispose();
+            this.clouds = null;
+            this.options.enableClouds = false;
+        }
+    }
+
+    updateSettings(settings) {
+        try {
+            this.options.participantPointSize = settings.participantPointSize;
+            this.options.participantPointOffset = settings.participantPointOffset;
+            this.options.participantPointColor = settings.participantPointColor;
+            this.options.highlightedPointColor = settings.highlightedPointColor;
+            this.options.autoRotateSpeed = settings.autoRotateSpeed;
+            this.options.cloudsOpacity = settings.cloudsOpacity;
+            this.options.cloudsSpeed = settings.cloudsSpeed;
+            this.options.atmosphereOpacity = settings.atmosphereOpacity;
+            
+            this.setAutoRotation(settings.autoRotate, settings.autoRotateSpeed);
+            this.setSunLightIntensity(settings.sunLightIntensity);
+            this.setSunLightColor(settings.sunLightColor);
+            this.setAmbientLightIntensity(settings.ambientLightIntensity);
+            
+            this.toggleAtmosphere(settings.enableAtmosphereGlow);
+            this.toggleClouds(settings.enableClouds);
+            
+            if (this.renderer) {
+                this.renderer.setSize(settings.width, settings.height);
+            }
+            if (this.camera) {
+                this.camera.aspect = settings.width / settings.height;
+                this.camera.updateProjectionMatrix();
+            }
+            if (this.controls) {
+                this.controls.minDistance = settings.minZoom;
+                this.controls.maxDistance = settings.maxZoom;
+                this.controls.enableZoom = settings.enableZoom;
+            }
+            if (this.atmosphere) {
+                this.atmosphere.material.opacity = settings.atmosphereOpacity;
+            }
+            if (this.clouds) {
+                this.clouds.material.opacity = settings.cloudsOpacity;
+            }
+            
+            const participants = Array.from(this.pointMetadata.values());
+            if (participants.length > 0) {
+                this.addParticipants(participants);
+            }
+            
+            console.log('✅ Настройки применены');
+            return true;
+        } catch (error) {
+            console.error('Ошибка применения настроек:', error);
+            return false;
+        }
+    }
+
     getState() {
         return { ...this.state };
     }
@@ -1135,6 +1212,19 @@ export function setAmbientLightIntensity(containerId, intensity) {
         return false;
     } catch (error) {
         console.error('Error setting ambient light intensity for globe', containerId, ':', error);
+        return false;
+    }
+}
+
+export function updateSettings(containerId, settings) {
+    try {
+        const globe = globeInstances.get(containerId);
+        if (globe) {
+            return globe.updateSettings(settings);
+        }
+        return false;
+    } catch (error) {
+        console.error('Error updating settings for globe', containerId, ':', error);
         return false;
     }
 }

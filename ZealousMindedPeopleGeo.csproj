@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
@@ -35,7 +35,7 @@
     </PackageDescription>
     <PackageTags>geography;maps;community;blazor;threejs;pwa;geocoding;localization;validation;caching</PackageTags>
     <PackageProjectUrl>https://github.com/zealousmindedpeople/geo-library</PackageProjectUrl>
-    <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <!-- Иконка пакета будет добавлена позже -->
     <!-- <PackageIcon>icon.png</PackageIcon> -->
     <RepositoryUrl>https://github.com/zealousmindedpeople/geo-library.git</RepositoryUrl>
@@ -77,14 +77,13 @@
 
   <!-- Ссылки на пакеты -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components" Version="9.0.9" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.9" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.9" />
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.9" />
+    <PackageReference Include="Microsoft.AspNetCore.Components" Version="10.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.0" />
     <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
     <PackageReference Include="Google.Apis.Sheets.v4" Version="1.70.0.3819" />
-    <PackageReference Include="System.Text.Json" Version="9.0.9" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.HealthChecks" Version="2.2.0" />
   </ItemGroup>
 
@@ -125,9 +124,6 @@
     <SourceRoot Include="$(NuGetPackageRoot)" Condition=" '$(NuGetPackageRoot)' != '' " />
   </ItemGroup>
 
-  <!-- Целевые файлы для различных платформ -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
-    <PackageReference Include="Microsoft.AspNetCore.App" Version="9.0.0" />
-  </ItemGroup>
+
 
 </Project>

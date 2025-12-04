@@ -33,7 +33,7 @@ public class FileGeoJsonService : IGeoJsonService
 
     public async ValueTask<Models.GeoJsonFeatureCollection> GetCountriesDataAsync(CancellationToken ct = default)
     {
-        return await _cache.GetOrCreateAsync(CountriesCacheKey, async entry =>
+        var result = await _cache.GetOrCreateAsync(CountriesCacheKey, async entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = _cacheDuration;
             _logger.LogInformation("Загрузка данных стран из внешнего источника");
@@ -68,11 +68,12 @@ public class FileGeoJsonService : IGeoJsonService
                 throw;
             }
         });
+        return result ?? new Models.GeoJsonFeatureCollection();
     }
 
     public async ValueTask<Models.GeoJsonFeatureCollection> GetCitiesDataAsync(CancellationToken ct = default)
     {
-        return await _cache.GetOrCreateAsync(CitiesCacheKey, async entry =>
+        var result = await _cache.GetOrCreateAsync(CitiesCacheKey, async entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = _cacheDuration;
             _logger.LogInformation("Загрузка данных городов из внешнего источника");
@@ -107,6 +108,7 @@ public class FileGeoJsonService : IGeoJsonService
                 throw;
             }
         });
+        return result ?? new Models.GeoJsonFeatureCollection();
     }
 
     public async ValueTask<Models.CountryInfo?> GetCountryByCoordinatesAsync(double latitude, double longitude, CancellationToken ct = default)
@@ -226,7 +228,7 @@ public class FileGeoJsonService : IGeoJsonService
     /// <summary>
     /// Обогащает данные стран русскими названиями
     /// </summary>
-    private async Task EnrichCountriesWithRussianNames(Models.GeoJsonFeatureCollection countries)
+    private Task EnrichCountriesWithRussianNames(Models.GeoJsonFeatureCollection countries)
     {
         // Простая карта соответствий названий стран
         var russianNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -305,6 +307,7 @@ public class FileGeoJsonService : IGeoJsonService
                 feature.Properties.NameRu = russianName;
             }
         }
+        return Task.CompletedTask;
     }
 
     /// <summary>

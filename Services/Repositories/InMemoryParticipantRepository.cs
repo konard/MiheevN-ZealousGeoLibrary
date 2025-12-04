@@ -18,68 +18,68 @@ public class InMemoryParticipantRepository : IParticipantRepository
         _logger = logger;
     }
 
-    public async ValueTask<RepositoryResult> AddParticipantAsync(Participant participant, CancellationToken ct = default)
+    public ValueTask<RepositoryResult> AddParticipantAsync(Participant participant, CancellationToken ct = default)
     {
         try
         {
             if (participant == null)
             {
-                return new RepositoryResult
+                return ValueTask.FromResult(new RepositoryResult
                 {
                     Success = false,
                     ErrorMessage = "Participant is null"
-                };
+                });
             }
 
             // Проверяем, существует ли уже участник с таким ID
             if (_participants.ContainsKey(participant.Id))
             {
-                return new RepositoryResult
+                return ValueTask.FromResult(new RepositoryResult
                 {
                     Success = false,
                     ErrorMessage = $"Participant with ID {participant.Id} already exists"
-                };
+                });
             }
 
             _participants[participant.Id] = participant;
 
             _logger.LogInformation("Participant {Name} added with ID {Id}", participant.Name, participant.Id);
 
-            return new RepositoryResult
+            return ValueTask.FromResult(new RepositoryResult
             {
                 Success = true,
                 RecordId = participant.Id
-            };
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error adding participant {Name}", participant?.Name);
 
-            return new RepositoryResult
+            return ValueTask.FromResult(new RepositoryResult
             {
                 Success = false,
                 ErrorMessage = ex.Message
-            };
+            });
         }
     }
 
-    public async ValueTask<IEnumerable<Participant>> GetAllParticipantsAsync(CancellationToken ct = default)
+    public ValueTask<IEnumerable<Participant>> GetAllParticipantsAsync(CancellationToken ct = default)
     {
         try
         {
             var participants = _participants.Values.ToList();
             _logger.LogInformation("Retrieved {Count} participants", participants.Count);
 
-            return participants;
+            return ValueTask.FromResult<IEnumerable<Participant>>(participants);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting all participants");
-            return Enumerable.Empty<Participant>();
+            return ValueTask.FromResult(Enumerable.Empty<Participant>());
         }
     }
 
-    public async ValueTask<Participant?> GetParticipantByIdAsync(Guid id, CancellationToken ct = default)
+    public ValueTask<Participant?> GetParticipantByIdAsync(Guid id, CancellationToken ct = default)
     {
         try
         {
@@ -93,60 +93,60 @@ public class InMemoryParticipantRepository : IParticipantRepository
                 _logger.LogWarning("Participant with ID {Id} not found", id);
             }
 
-            return participant;
+            return ValueTask.FromResult<Participant?>(participant);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting participant by ID {Id}", id);
-            return null;
+            return ValueTask.FromResult<Participant?>(null);
         }
     }
 
-    public async ValueTask<RepositoryResult> UpdateParticipantAsync(Participant participant, CancellationToken ct = default)
+    public ValueTask<RepositoryResult> UpdateParticipantAsync(Participant participant, CancellationToken ct = default)
     {
         try
         {
             if (participant == null)
             {
-                return new RepositoryResult
+                return ValueTask.FromResult(new RepositoryResult
                 {
                     Success = false,
                     ErrorMessage = "Participant is null"
-                };
+                });
             }
 
             if (!_participants.ContainsKey(participant.Id))
             {
-                return new RepositoryResult
+                return ValueTask.FromResult(new RepositoryResult
                 {
                     Success = false,
                     ErrorMessage = $"Participant with ID {participant.Id} not found"
-                };
+                });
             }
 
             _participants[participant.Id] = participant;
 
             _logger.LogInformation("Participant {Name} updated with ID {Id}", participant.Name, participant.Id);
 
-            return new RepositoryResult
+            return ValueTask.FromResult(new RepositoryResult
             {
                 Success = true,
                 RecordId = participant.Id
-            };
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating participant {Name}", participant?.Name);
 
-            return new RepositoryResult
+            return ValueTask.FromResult(new RepositoryResult
             {
                 Success = false,
                 ErrorMessage = ex.Message
-            };
+            });
         }
     }
 
-    public async ValueTask<RepositoryResult> DeleteParticipantAsync(Guid id, CancellationToken ct = default)
+    public ValueTask<RepositoryResult> DeleteParticipantAsync(Guid id, CancellationToken ct = default)
     {
         try
         {
@@ -154,37 +154,37 @@ public class InMemoryParticipantRepository : IParticipantRepository
             {
                 _logger.LogInformation("Participant {Name} deleted with ID {Id}", removedParticipant.Name, id);
 
-                return new RepositoryResult
+                return ValueTask.FromResult(new RepositoryResult
                 {
                     Success = true,
                     RecordId = id
-                };
+                });
             }
             else
             {
-                return new RepositoryResult
+                return ValueTask.FromResult(new RepositoryResult
                 {
                     Success = false,
                     ErrorMessage = $"Participant with ID {id} not found"
-                };
+                });
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error deleting participant with ID {Id}", id);
 
-            return new RepositoryResult
+            return ValueTask.FromResult(new RepositoryResult
             {
                 Success = false,
                 ErrorMessage = ex.Message
-            };
+            });
         }
     }
 
-    public async ValueTask<bool> IsAvailableAsync(CancellationToken ct = default)
+    public ValueTask<bool> IsAvailableAsync(CancellationToken ct = default)
     {
         // In-Memory репозиторий всегда доступен
-        return true;
+        return ValueTask.FromResult(true);
     }
 
     /// <summary>

@@ -127,7 +127,7 @@ public class ParticipantService : IParticipantService
         }
     }
 
-    public async Task<ValidationResult> ValidateRegistrationAsync(ParticipantRegistrationModel model)
+    public Task<ValidationResult> ValidateRegistrationAsync(ParticipantRegistrationModel model)
     {
         var result = new ValidationResult { IsValid = true };
 
@@ -157,7 +157,7 @@ public class ParticipantService : IParticipantService
             result.Errors.Add("Сообщение слишком длинное");
         }
 
-        return result;
+        return Task.FromResult(result);
     }
 
     public async Task<bool> InitializeStorageAsync()

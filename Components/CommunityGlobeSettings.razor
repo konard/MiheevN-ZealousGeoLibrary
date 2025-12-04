@@ -1,0 +1,326 @@
+@using System.Text.Json
+@inject IJSRuntime JSRuntime
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Настройки глобуса</h5>
+        <div>
+            <button class="btn btn-sm btn-warning" @onclick="ApplySettingsAsync">✓ Применить</button>
+            <button class="btn btn-sm btn-success" @onclick="SaveSettingsAsync">💾 Сохранить</button>
+            <button class="btn btn-sm btn-primary" @onclick="LoadSettingsAsync">📂 Загрузить</button>
+            <button class="btn btn-sm btn-secondary" @onclick="ResetToDefaults">🔄 Сброс</button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="accordion" id="settingsAccordion">
+
+            <!-- Размеры -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#sizeSettings">
+                        📐 Размеры
+                    </button>
+                </h2>
+                <div id="sizeSettings" class="accordion-collapse collapse show" data-bs-parent="#settingsAccordion">
+                    <div class="accordion-body">
+                        <div class="mb-2">
+                            <label class="form-label">Ширина: @Settings.Width px</label>
+                            <input type="range" class="form-range" min="400" max="2000" step="50" @bind="Settings.Width" @bind:after="ApplySettingsAsync" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Высота: @Settings.Height px</label>
+                            <input type="range" class="form-range" min="300" max="1500" step="50" @bind="Settings.Height" @bind:after="ApplySettingsAsync" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Точки участников -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#pointSettings">
+                        📍 Точки участников
+                    </button>
+                </h2>
+                <div id="pointSettings" class="accordion-collapse collapse" data-bs-parent="#settingsAccordion">
+                    <div class="accordion-body">
+                        <div class="mb-2">
+                            <label class="form-label">Размер точки: @Settings.ParticipantPointSize</label>
+                            <input type="range" class="form-range" min="0.1" max="2.0" step="0.1" @bind="Settings.ParticipantPointSize" @bind:after="ApplySettingsAsync" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Отступ от поверхности: @Settings.ParticipantPointOffset</label>
+                            <input type="range" class="form-range" min="0.01" max="0.2" step="0.01" @bind="Settings.ParticipantPointOffset" @bind:after="ApplySettingsAsync" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Цвет точки</label>
+                            <input type="color" class="form-control form-control-color" @bind="Settings.ParticipantPointColor" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Цвет выделенной точки</label>
+                            <input type="color" class="form-control form-control-color" @bind="Settings.HighlightedPointColor" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Вращение -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#rotationSettings">
+                        🔄 Вращение
+                    </button>
+                </h2>
+                <div id="rotationSettings" class="accordion-collapse collapse" data-bs-parent="#settingsAccordion">
+                    <div class="accordion-body">
+                        <div class="mb-2 form-check">
+                            <input type="checkbox" class="form-check-input" id="autoRotate" @bind="Settings.AutoRotate" />
+                            <label class="form-check-label" for="autoRotate">Автоматическое вращение</label>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Скорость вращения: @Settings.AutoRotateSpeed</label>
+                            <input type="range" class="form-range" min="0.1" max="2.0" step="0.1" @bind="Settings.AutoRotateSpeed" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Освещение -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#lightSettings">
+                        💡 Освещение
+                    </button>
+                </h2>
+                <div id="lightSettings" class="accordion-collapse collapse" data-bs-parent="#settingsAccordion">
+                    <div class="accordion-body">
+                        <div class="mb-2">
+                            <label class="form-label">Яркость солнца: @Settings.SunLightIntensity</label>
+                            <input type="range" class="form-range" min="0.1" max="5.0" step="0.1" @bind="Settings.SunLightIntensity" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Цвет солнца</label>
+                            <input type="color" class="form-control form-control-color" @bind="Settings.SunLightColor" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Яркость окружения: @Settings.AmbientLightIntensity</label>
+                            <input type="range" class="form-range" min="0.1" max="5.0" step="0.1" @bind="Settings.AmbientLightIntensity" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Цвет окружения</label>
+                            <input type="color" class="form-control form-control-color" @bind="Settings.AmbientLightColor" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Атмосфера и облака -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#atmosphereSettings">
+                        🌫️ Атмосфера и облака
+                    </button>
+                </h2>
+                <div id="atmosphereSettings" class="accordion-collapse collapse" data-bs-parent="#settingsAccordion">
+                    <div class="accordion-body">
+                        <div class="mb-2 form-check">
+                            <input type="checkbox" class="form-check-input" id="enableAtmosphere" @bind="Settings.EnableAtmosphereGlow" />
+                            <label class="form-check-label" for="enableAtmosphere">Включить атмосферу</label>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Цвет атмосферы</label>
+                            <input type="color" class="form-control form-control-color" @bind="Settings.AtmosphereColor" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Прозрачность атмосферы: @Settings.AtmosphereOpacity</label>
+                            <input type="range" class="form-range" min="0.0" max="1.0" step="0.05" @bind="Settings.AtmosphereOpacity" />
+                        </div>
+                        <div class="mb-2 form-check">
+                            <input type="checkbox" class="form-check-input" id="enableClouds" @bind="Settings.EnableClouds" />
+                            <label class="form-check-label" for="enableClouds">Включить облака</label>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Прозрачность облаков: @Settings.CloudsOpacity</label>
+                            <input type="range" class="form-range" min="0.0" max="1.0" step="0.05" @bind="Settings.CloudsOpacity" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Скорость облаков: @Settings.CloudsSpeed</label>
+                            <input type="range" class="form-range" min="0.0" max="0.1" step="0.01" @bind="Settings.CloudsSpeed" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Камера -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cameraSettings">
+                        📷 Камера
+                    </button>
+                </h2>
+                <div id="cameraSettings" class="accordion-collapse collapse" data-bs-parent="#settingsAccordion">
+                    <div class="accordion-body">
+                        <div class="mb-2 form-check">
+                            <input type="checkbox" class="form-check-input" id="enableZoom" @bind="Settings.EnableZoom" />
+                            <label class="form-check-label" for="enableZoom">Разрешить масштабирование</label>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Минимальное приближение: @Settings.MinZoom</label>
+                            <input type="range" class="form-range" min="0.5" max="2.0" step="0.1" @bind="Settings.MinZoom" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Максимальное приближение: @Settings.MaxZoom</label>
+                            <input type="range" class="form-range" min="2.0" max="10.0" step="0.5" @bind="Settings.MaxZoom" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Цвета -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#colorSettings">
+                        🎨 Цвета
+                    </button>
+                </h2>
+                <div id="colorSettings" class="accordion-collapse collapse" data-bs-parent="#settingsAccordion">
+                    <div class="accordion-body">
+                        <div class="mb-2">
+                            <label class="form-label">Цвет фона</label>
+                            <input type="color" class="form-control form-control-color" @bind="Settings.BackgroundColor" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- JSON Preview -->
+        <div class="mt-3">
+            <label class="form-label">JSON конфигурация:</label>
+            <textarea class="form-control font-monospace" rows="8" readonly>@JsonPreview</textarea>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string GlobeId { get; set; } = "default";
+    [Parameter] public EventCallback<GlobeSettings> OnSettingsChanged { get; set; }
+
+    private GlobeSettings Settings { get; set; } = new();
+    private string JsonPreview => JsonSerializer.Serialize(Settings, new JsonSerializerOptions { WriteIndented = true });
+    private string ContainerId => $"globe-{GlobeId}";
+
+    protected override void OnInitialized()
+    {
+        LoadDefaultSettings();
+    }
+
+    private void LoadDefaultSettings()
+    {
+        Settings = new GlobeSettings
+        {
+            Width = 800,
+            Height = 600,
+            BackgroundColor = "#000011",
+            AtmosphereColor = "#00aaff",
+            AtmosphereOpacity = 0.2,
+            ParticipantPointSize = 0.2,
+            ParticipantPointColor = "#ffff00",
+            ParticipantPointOffset = 0.02,
+            HighlightedPointColor = "#ff6600",
+            AutoRotate = true,
+            AutoRotateSpeed = 0.1,
+            EnableMouseControls = true,
+            EnableZoom = true,
+            MinZoom = 0.5,
+            MaxZoom = 4.0,
+            EnableClouds = true,
+            CloudsOpacity = 0.1,
+            CloudsSpeed = 0.01,
+            EnableAtmosphereGlow = true,
+            SunLightIntensity = 3.0,
+            SunLightColor = "#ffffff",
+            AmbientLightIntensity = 4.0,
+            AmbientLightColor = "#404040"
+        };
+    }
+
+    private async Task ApplySettingsAsync()
+    {
+        var module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "/_content/ZealousMindedPeopleGeo/js/community-globe.js");
+        await module.InvokeVoidAsync("updateSettings", ContainerId, Settings);
+        await OnSettingsChanged.InvokeAsync(Settings);
+    }
+
+    private async Task SaveSettingsAsync()
+    {
+        await ApplySettingsAsync();
+        var json = JsonSerializer.Serialize(Settings, new JsonSerializerOptions { WriteIndented = true });
+        var fileName = $"globe-settings-{GlobeId}-{DateTime.Now:yyyyMMdd-HHmmss}.json";
+
+        await JSRuntime.InvokeVoidAsync("eval", $@"
+            const blob = new Blob([{JsonSerializer.Serialize(json)}], {{ type: 'application/json' }});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '{fileName}';
+            a.click();
+            URL.revokeObjectURL(url);
+        ");
+    }
+
+    private async Task LoadSettingsAsync()
+    {
+        await JSRuntime.InvokeVoidAsync("eval", $@"
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = async (e) => {{
+                const file = e.target.files[0];
+                const text = await file.text();
+                DotNet.invokeMethodAsync('ZealousMindedPeopleGeo', 'LoadSettingsFromJson', text);
+            }};
+            input.click();
+        ");
+    }
+
+    [JSInvokable]
+    public static void LoadSettingsFromJson(string json)
+    {
+        // Будет вызван из JavaScript
+    }
+
+    private async Task ResetToDefaults()
+    {
+        LoadDefaultSettings();
+        await ApplySettingsAsync();
+        StateHasChanged();
+    }
+    public class GlobeSettings
+    {
+        public int Width { get; set; }
+        public int Height { get; set; }
+        public string BackgroundColor { get; set; } = "#000011";
+        public string AtmosphereColor { get; set; } = "#00aaff";
+        public double AtmosphereOpacity { get; set; }
+        public double ParticipantPointSize { get; set; }
+        public string ParticipantPointColor { get; set; } = "#ffff00";
+        public double ParticipantPointOffset { get; set; }
+        public string HighlightedPointColor { get; set; } = "#ff6600";
+        public bool AutoRotate { get; set; }
+        public double AutoRotateSpeed { get; set; }
+        public bool EnableMouseControls { get; set; }
+        public bool EnableZoom { get; set; }
+        public double MinZoom { get; set; }
+        public double MaxZoom { get; set; }
+        public bool EnableClouds { get; set; }
+        public double CloudsOpacity { get; set; }
+        public double CloudsSpeed { get; set; }
+        public bool EnableAtmosphereGlow { get; set; }
+        public double SunLightIntensity { get; set; }
+        public string SunLightColor { get; set; } = "#ffffff";
+        public double AmbientLightIntensity { get; set; }
+        public string AmbientLightColor { get; set; } = "#404040";
+    }
+}
+

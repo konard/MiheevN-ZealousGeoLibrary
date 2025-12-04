@@ -336,7 +336,7 @@ public class ThreeJsGlobeService : IThreeJsGlobeService, IAsyncDisposable
         }
     }
 
-    public async ValueTask<GlobeOperationResult> SetReadyCallbackAsync(string containerId, Func<GlobeState, Task> callback, CancellationToken ct = default)
+    public ValueTask<GlobeOperationResult> SetReadyCallbackAsync(string containerId, Func<GlobeState, Task> callback, CancellationToken ct = default)
     {
         try
         {
@@ -344,12 +344,12 @@ public class ThreeJsGlobeService : IThreeJsGlobeService, IAsyncDisposable
             var reference = DotNetObjectReference.Create(wrapper);
             _callbacks[containerId] = (callback, reference);
             _logger.LogInformation("Callback сохранен для {ContainerId}", containerId);
-            return new GlobeOperationResult { Success = true };
+            return ValueTask.FromResult(new GlobeOperationResult { Success = true });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error setting ready callback for globe {ContainerId}", containerId);
-            return new GlobeOperationResult { Success = false, ErrorMessage = ex.Message };
+            return ValueTask.FromResult(new GlobeOperationResult { Success = false, ErrorMessage = ex.Message });
         }
     }
 
@@ -368,7 +368,7 @@ public class ThreeJsGlobeService : IThreeJsGlobeService, IAsyncDisposable
 
     public async ValueTask<bool> IsAvailableAsync(CancellationToken ct = default)
     {
-        return await IsGlobeAvailableAsync(null, ct);
+        return await IsGlobeAvailableAsync(string.Empty, ct);
     }
 
     public async ValueTask<bool> IsGlobeAvailableAsync(string containerId, CancellationToken ct = default)

@@ -11,7 +11,7 @@ public class PwaService : IPwaService, IAsyncDisposable
 {
     private readonly IJSRuntime _jsRuntime;
     private readonly ILogger<PwaService> _logger;
-    private IJSObjectReference? _pwaHelper;
+    private IJSObjectReference? _pwaHelper = null;
     private bool _isInitialized = false;
 
     public PwaService(IJSRuntime jsRuntime, ILogger<PwaService> logger)

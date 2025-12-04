@@ -184,7 +184,7 @@
             {
                 Console.WriteLine($"❌ Ошибка добавления участников: {result.ErrorMessage}");
                 // Не показываем ошибку пользователю, если это "Globe instance not found" - глобус еще инициализируется
-                if (!result.ErrorMessage.Contains("Globe instance not found"))
+                if (result.ErrorMessage?.Contains("Globe instance not found") != true)
                 {
                     _errorMessage = $"Ошибка добавления участников: {result.ErrorMessage}";
                 }

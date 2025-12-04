@@ -281,10 +281,11 @@
         await LoadPwaInfoAsync();
     }
 
-    public async Task ShowNotificationTestAsync()
+    public Task ShowNotificationTestAsync()
     {
         _showNotificationTest = true;
         StateHasChanged();
+        return Task.CompletedTask;
     }
 
     private string FormatBytes(long bytes)

@@ -5,7 +5,7 @@
     <link href="/_content/ZealousMindedPeopleGeo/css/community-globe.css" rel="stylesheet" />
 </HeadContent>
 
-<div class="d-flex flex-column align-items-center bg-secondary">
+<div class="d-flex flex-column align-items-center gap-3 bg-black">
     <CommunityGlobeViewer GlobeId="@GlobeId" Width="@Width" Height="@Height" />
     
     @if (ShowControls)
@@ -17,6 +17,11 @@
     {
         <CommunityGlobeParticipantManager GlobeId="@GlobeId" />
     }
+    
+    @if (ShowSettings)
+    {
+        <CommunityGlobeSettings GlobeId="@GlobeId" />
+    }
 </div>
 
 @code {
@@ -26,4 +31,5 @@
     [Parameter] public bool ShowControls { get; set; } = true;
     [Parameter] public bool ShowParticipantManagement { get; set; } = true;
     [Parameter] public bool ShowParticipantInfo { get; set; } = true;
+    [Parameter] public bool ShowSettings { get; set; } = false;
 }

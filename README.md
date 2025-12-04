@@ -11,7 +11,9 @@
 - **Настройки глобуса** - Полная настройка параметров глобуса (размеры, освещение, атмосфера, облака)
 - **Динамическое управление** - Включение/выключение атмосферы и облаков в реальном времени
 - **Множественные глобусы** - Поддержка нескольких независимых 3D глобусов на одной странице
+- **Именованные контейнеры гео-данных** - Удобная организация данных в именованных контейнерах для разных глобусов
 - **Управление состоянием** - Централизованное управление состоянием всех глобусов
+- **Загрузка/сохранение данных** - Удобные интерфейсы для инициализации и сохранения данных из JSON и других источников
 - **In-Memory репозиторий** - Простое хранение данных участников в памяти
 - **Модульная архитектура** - Четкое разделение ответственности между компонентами
 - **Адаптивный дизайн** - Адаптация под различные размеры экрана и устройства
@@ -343,6 +345,170 @@ var isValid = await ValidationService.AreCoordinatesValidAsync(latitude, longitu
 var isValid = await ValidationService.IsAddressValidForGeocodingAsync(address);
 ```
 
+## 📦 Именованные контейнеры гео-данных
+
+Библиотека предоставляет удобные интерфейсы для загрузки и сохранения данных в именованные контейнеры гео-данных, что упрощает работу с несколькими глобусами и разными наборами данных.
+
+### Регистрация сервисов
+
+```csharp
+// В Program.cs
+builder.Services.AddZealousMindedPeopleGeoServices(); // Автоматически регистрирует контейнеры
+// или отдельно:
+builder.Services.AddGeoDataContainers();
+```
+
+### Работа с контейнерами
+
+#### Получение и создание контейнеров
+
+```csharp
+@inject IGeoDataContainerManager ContainerManager
+
+// Создание или получение контейнера
+var container = ContainerManager.GetOrCreateContainer("europe-participants");
+
+// Проверка существования
+if (ContainerManager.ContainerExists("europe-participants"))
+{
+    // Контейнер существует
+}
+
+// Получение списка всех контейнеров
+var containerIds = ContainerManager.GetContainerIds();
+```
+
+#### Добавление участников
+
+```csharp
+// Добавление одного участника
+var participant = new Participant
+{
+    Name = "Иван Иванов",
+    Email = "ivan@example.com",
+    Address = "Москва, Россия",
+    Latitude = 55.7558,
+    Longitude = 37.6176
+};
+
+var result = await container.AddParticipantAsync(participant);
+
+// Добавление нескольких участников
+var participants = new List<Participant> { ... };
+var result = await container.AddParticipantsAsync(participants);
+```
+
+#### Получение данных
+
+```csharp
+// Получение всех участников из контейнера
+var allParticipants = await container.GetAllParticipantsAsync();
+
+// Получение участника по ID
+var participant = await container.GetParticipantByIdAsync(participantId);
+
+// Получение количества участников
+int count = container.Count;
+```
+
+### Загрузка данных из JSON
+
+```csharp
+@inject IGeoDataContainerManager ContainerManager
+
+// Загрузка из JSON файла
+var result = await ContainerManager.LoadFromJsonFileAsync("my-container", "data/participants.json");
+
+// Загрузка из JSON строки
+var jsonContent = "[{\"name\": \"Test\", \"latitude\": 55.7558, \"longitude\": 37.6176}]";
+var result = await ContainerManager.LoadFromJsonAsync("my-container", jsonContent);
+```
+
+### Сохранение данных в JSON
+
+```csharp
+// Экспорт в JSON строку
+var json = await ContainerManager.ExportToJsonAsync("my-container");
+
+// Сохранение в файл
+var result = await ContainerManager.SaveToJsonFileAsync("my-container", "data/export.json");
+```
+
+### Интеграция с глобусом
+
+#### Использование GlobeDataInitializer
+
+```csharp
+@inject GlobeDataInitializer DataInitializer
+
+// Инициализация глобуса с данными из контейнера
+var result = await DataInitializer.InitializeGlobeWithDataAsync(
+    globeId: "europe",
+    htmlContainerId: "globe-europe",
+    dataContainerId: "europe-participants",
+    options: new GlobeOptions { Width = 800, Height = 600 }
+);
+
+// Добавление участника через форму с автоматическим отображением на глобусе
+var addResult = await DataInitializer.AddParticipantToGlobeAsync(
+    globeId: "europe",
+    htmlContainerId: "globe-europe",
+    dataContainerId: "europe-participants",
+    participant: newParticipant
+);
+```
+
+#### Прямая загрузка данных в глобус
+
+```csharp
+@inject IGeoDataContainerManager ContainerManager
+@inject IGlobeMediator GlobeMediator
+
+// Загрузка данных из контейнера в глобус
+var result = await ContainerManager.LoadToGlobeAsync(
+    containerId: "europe-participants",
+    globeMediator: GlobeMediator,
+    globeContainerId: "globe-europe"
+);
+```
+
+### Использование формы для добавления точек
+
+```razor
+@using ZealousMindedPeopleGeo.Components
+
+<GeoDataParticipantForm
+    DataContainerId="europe-participants"
+    GlobeId="europe"
+    Title="Add Point to Europe Map"
+    SubmitButtonText="Add to Map"
+    OnParticipantAdded="HandleParticipantAdded" />
+
+@code {
+    private async Task HandleParticipantAdded(Participant participant)
+    {
+        Console.WriteLine($"Added: {participant.Name}");
+    }
+}
+```
+
+### Подписка на изменения данных
+
+```csharp
+@inject IGeoDataContainerManager ContainerManager
+
+protected override void OnInitialized()
+{
+    ContainerManager.OnDataChanged += HandleDataChanged;
+}
+
+private void HandleDataChanged(string containerId, GeoDataChangeType changeType)
+{
+    Console.WriteLine($"Container '{containerId}' changed: {changeType}");
+    // GeoDataChangeType: Added, Updated, Removed, Cleared, BulkLoaded
+}
+```
+
 ## 💾 Кэширование
 
 Интеллектуальное кэширование для оптимизации производительности:
@@ -426,12 +592,19 @@ ZealousMindedPeopleGeo/
 │   ├── CommunityGlobeComponent.razor      # Главный компонент-обертка
 │   ├── CommunityGlobeViewer.razor         # Компонент отображения глобуса
 │   ├── CommunityGlobeControls.razor       # Панель управления
-│   └── CommunityGlobeParticipantManager.razor # Управление участниками
+│   ├── CommunityGlobeParticipantManager.razor # Управление участниками
+│   └── GeoDataParticipantForm.razor       # Форма для добавления точек
 ├── Services/            # Бизнес-логика сервисы
 │   ├── Mapping/                          # Сервисы для работы с картами
 │   │   ├── ThreeJsGlobeService.cs        # Управление 3D сценой
 │   │   ├── GlobeMediatorService.cs       # Посредник Blazor-JavaScript
 │   │   └── IGlobeMediator.cs             # Интерфейс посредника
+│   ├── GeoDataContainer/                 # Именованные контейнеры данных
+│   │   ├── IGeoDataContainer.cs          # Интерфейс контейнера
+│   │   ├── IGeoDataContainerManager.cs   # Менеджер контейнеров
+│   │   ├── InMemoryGeoDataContainer.cs   # In-Memory реализация
+│   │   ├── GeoDataContainerManager.cs    # Реализация менеджера
+│   │   └── GeoDataLoaderExtensions.cs    # Расширения для загрузки
 │   └── Repositories/                     # Репозитории данных
 │       └── InMemoryParticipantRepository.cs # In-Memory хранилище
 ├── Models/              # Модели данных

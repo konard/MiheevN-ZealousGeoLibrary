@@ -7,6 +7,7 @@ using ZealousMindedPeopleGeo.Services;
 using ZealousMindedPeopleGeo.Services.Repositories;
 using ZealousMindedPeopleGeo.Services.Geocoding;
 using ZealousMindedPeopleGeo.Services.Mapping;
+using ZealousMindedPeopleGeo.Services.GeoDataContainer;
 
 namespace ZealousMindedPeopleGeo
 {
@@ -73,6 +74,12 @@ namespace ZealousMindedPeopleGeo
 
             // Регистрация основного сервиса участников
             services.AddScoped<IParticipantService, ParticipantService>();
+
+            // Регистрация менеджера именованных контейнеров гео-данных
+            services.AddGeoDataContainers();
+
+            // Регистрация инициализатора данных глобуса
+            services.AddScoped<GlobeDataInitializer>();
 
             return services;
         }

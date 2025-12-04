@@ -1,0 +1,313 @@
+@using Microsoft.AspNetCore.Components
+@using Microsoft.Extensions.Logging
+@using ZealousMindedPeopleGeo.Services
+@using ZealousMindedPeopleGeo.Services.Geocoding
+@using ZealousMindedPeopleGeo.Services.GeoDataContainer
+@using ZealousMindedPeopleGeo.Services.Mapping
+@using ZealousMindedPeopleGeo.Models
+@inject IGeoDataContainerManager ContainerManager
+@inject IGlobeMediator GlobeMediator
+@inject GlobeStateService GlobeStateService
+@inject IGeocodingService GeocodingService
+@inject ILogger<GeoDataParticipantForm> Logger
+
+<div class="geodata-participant-form">
+    <h3>@Title</h3>
+
+    <EditForm Model="@_model" OnValidSubmit="@HandleSubmitAsync">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-group mb-3">
+            <label for="name">Name *</label>
+            <InputText id="name" @bind-Value="_model.Name" class="form-control" placeholder="Your name" />
+            <ValidationMessage For="@(() => _model.Name)" />
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="email">Email *</label>
+            <InputText id="email" @bind-Value="_model.Email" class="form-control" placeholder="your@email.com" />
+            <ValidationMessage For="@(() => _model.Email)" />
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="address">Address *</label>
+            <InputText id="address" @bind-Value="_model.Address" class="form-control" placeholder="Enter your full address" />
+            <ValidationMessage For="@(() => _model.Address)" />
+            @if (_isGeocoding)
+            {
+                <small class="text-muted">Finding your location...</small>
+            }
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="socialMedia">Social Media (optional)</label>
+            <InputText id="socialMedia" @bind-Value="_model.SocialMedia" class="form-control" placeholder="Your social media links" />
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="message">Message (optional)</label>
+            <InputTextArea id="message" @bind-Value="_model.Message" class="form-control" rows="3" placeholder="Share your thoughts or goals" />
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary" disabled="@_isSubmitting">
+                @(_isSubmitting ? "Saving..." : SubmitButtonText)
+            </button>
+
+            @if (ShowClearButton)
+            {
+                <button type="button" class="btn btn-secondary" @onclick="ClearForm">Clear</button>
+            }
+        </div>
+    </EditForm>
+
+    @if (!string.IsNullOrEmpty(_statusMessage))
+    {
+        <div class="alert @_statusClass mt-3" role="alert">
+            @_statusMessage
+        </div>
+    }
+
+    @if (_geocodingResult != null && _geocodingResult.Success)
+    {
+        <div class="location-preview mt-3 p-3 bg-light rounded">
+            <h5>Location Found</h5>
+            <p class="mb-1"><strong>Address:</strong> @_geocodingResult.FormattedAddress</p>
+            <p class="mb-0"><strong>Coordinates:</strong> @_geocodingResult.Latitude.ToString("F6"), @_geocodingResult.Longitude.ToString("F6")</p>
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>
+    /// ID контейнера гео-данных для сохранения
+    /// </summary>
+    [Parameter] public string DataContainerId { get; set; } = "default";
+
+    /// <summary>
+    /// ID глобуса для отображения добавленной точки (опционально)
+    /// </summary>
+    [Parameter] public string? GlobeId { get; set; }
+
+    /// <summary>
+    /// ID HTML-контейнера глобуса (если отличается от GlobeId)
+    /// </summary>
+    [Parameter] public string? GlobeContainerId { get; set; }
+
+    /// <summary>
+    /// Заголовок формы
+    /// </summary>
+    [Parameter] public string Title { get; set; } = "Add New Point";
+
+    /// <summary>
+    /// Текст кнопки отправки
+    /// </summary>
+    [Parameter] public string SubmitButtonText { get; set; } = "Add Point";
+
+    /// <summary>
+    /// Показывать кнопку очистки
+    /// </summary>
+    [Parameter] public bool ShowClearButton { get; set; } = true;
+
+    /// <summary>
+    /// Автоматически геокодировать адрес при вводе
+    /// </summary>
+    [Parameter] public bool AutoGeocode { get; set; } = true;
+
+    /// <summary>
+    /// Callback при успешном добавлении участника
+    /// </summary>
+    [Parameter] public EventCallback<Participant> OnParticipantAdded { get; set; }
+
+    private ParticipantRegistrationModel _model = new();
+    private bool _isSubmitting = false;
+    private bool _isGeocoding = false;
+    private GeocodingResult? _geocodingResult;
+    private string? _statusMessage;
+    private string _statusClass = "";
+    private System.Timers.Timer? _geocodingTimer;
+
+    private string EffectiveGlobeContainerId => GlobeContainerId ?? (GlobeId != null ? $"globe-{GlobeId}" : null) ?? "";
+
+    protected override void OnInitialized()
+    {
+        if (AutoGeocode)
+        {
+            _geocodingTimer = new System.Timers.Timer(1000);
+            _geocodingTimer.Elapsed += async (s, e) => await TryGeocodeAddressAsync();
+            _geocodingTimer.AutoReset = false;
+        }
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        _isSubmitting = true;
+        _statusMessage = null;
+
+        try
+        {
+            // 1. Геокодирование адреса
+            if (!await GeocodeAddressIfNeededAsync())
+            {
+                return;
+            }
+
+            // 2. Создание участника
+            var participant = new Participant
+            {
+                Id = Guid.NewGuid(),
+                Name = _model.Name,
+                Email = _model.Email,
+                Address = _model.Address,
+                Location = _geocodingResult?.FormattedAddress ?? _model.Address,
+                Latitude = _geocodingResult?.Latitude ?? 0,
+                Longitude = _geocodingResult?.Longitude ?? 0,
+                SocialMedia = _model.SocialMedia,
+                Message = _model.Message,
+                RegisteredAt = DateTime.UtcNow
+            };
+
+            // 3. Сохранение в контейнер гео-данных
+            var container = ContainerManager.GetOrCreateContainer(DataContainerId);
+            var saveResult = await container.AddParticipantAsync(participant);
+
+            if (!saveResult.Success)
+            {
+                _statusMessage = saveResult.ErrorMessage ?? "Failed to save participant";
+                _statusClass = "alert-danger";
+                Logger.LogError("Failed to save participant to container '{ContainerId}': {Error}", DataContainerId, saveResult.ErrorMessage);
+                return;
+            }
+
+            Logger.LogInformation("Participant '{Name}' saved to container '{ContainerId}'", participant.Name, DataContainerId);
+
+            // 4. Добавление на глобус (если указан)
+            if (!string.IsNullOrEmpty(GlobeId) && !string.IsNullOrEmpty(EffectiveGlobeContainerId))
+            {
+                var globeResult = await GlobeMediator.AddParticipantAsync(EffectiveGlobeContainerId, participant);
+
+                if (globeResult.Success)
+                {
+                    GlobeStateService.UpdateState(GlobeId, s =>
+                    {
+                        s.Participants.Add(participant);
+                        s.ParticipantCount = s.Participants.Count;
+                    });
+                    Logger.LogInformation("Participant '{Name}' added to globe '{GlobeId}'", participant.Name, GlobeId);
+                }
+                else
+                {
+                    Logger.LogWarning("Failed to add participant to globe: {Error}", globeResult.ErrorMessage);
+                }
+            }
+
+            // 5. Успех
+            _statusMessage = "Point added successfully!";
+            _statusClass = "alert-success";
+
+            // 6. Callback
+            if (OnParticipantAdded.HasDelegate)
+            {
+                await OnParticipantAdded.InvokeAsync(participant);
+            }
+
+            // 7. Очистка формы
+            ClearForm();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error adding participant");
+            _statusMessage = "An error occurred. Please try again.";
+            _statusClass = "alert-danger";
+        }
+        finally
+        {
+            _isSubmitting = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task<bool> GeocodeAddressIfNeededAsync()
+    {
+        if (_geocodingResult != null && _geocodingResult.Success)
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(_model.Address))
+        {
+            _statusMessage = "Please enter an address";
+            _statusClass = "alert-warning";
+            return false;
+        }
+
+        _isGeocoding = true;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            _geocodingResult = await GeocodingService.GeocodeAddressAsync(_model.Address);
+
+            if (!_geocodingResult.Success)
+            {
+                _statusMessage = $"Could not find location for address: {_geocodingResult.ErrorMessage}";
+                _statusClass = "alert-warning";
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Geocoding failed for address: {Address}", _model.Address);
+            _statusMessage = "Failed to geocode address. Please try again.";
+            _statusClass = "alert-danger";
+            return false;
+        }
+        finally
+        {
+            _isGeocoding = false;
+        }
+    }
+
+    private async Task TryGeocodeAddressAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_model.Address)) return;
+
+        _isGeocoding = true;
+        _geocodingResult = null;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            _geocodingResult = await GeocodingService.GeocodeAddressAsync(_model.Address);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Auto-geocoding failed");
+            _geocodingResult = new GeocodingResult
+            {
+                Success = false,
+                ErrorMessage = ex.Message
+            };
+        }
+        finally
+        {
+            _isGeocoding = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void ClearForm()
+    {
+        _model = new ParticipantRegistrationModel();
+        _geocodingResult = null;
+        _statusMessage = null;
+    }
+
+    public void Dispose()
+    {
+        _geocodingTimer?.Dispose();
+    }
+}

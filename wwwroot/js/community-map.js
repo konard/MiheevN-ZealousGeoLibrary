@@ -142,7 +142,7 @@ function createInfoWindowContent(participant) {
         <div style="max-width: 250px; font-family: Arial, sans-serif;">
             <h4 style="margin: 0 0 10px 0; color: #007bff;">${participant.Name}</h4>
             <p style="margin: 5px 0; color: #666;"><strong>📍 Местоположение:</strong> ${participant.Location}</p>
-            <p style="margin: 5px 0; color: #666;"><strong>📅 Регистрация:</strong> ${new Date(participant.Timestamp).toLocaleDateString()}</p>
+            <p style="margin: 5px 0; color: #666;"><strong>📅 Регистрация:</strong> ${new Date(participant.RegisteredAt).toLocaleDateString()}</p>
     `;
 
     if (participant.Skills) {

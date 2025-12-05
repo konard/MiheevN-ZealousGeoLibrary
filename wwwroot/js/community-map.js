@@ -139,11 +139,39 @@ function createCustomMarker(name) {
 
 function createInfoWindowContent(participant) {
     let content = `
-        <div style="max-width: 250px; font-family: Arial, sans-serif;">
+        <div style="max-width: 300px; font-family: Arial, sans-serif;">
             <h4 style="margin: 0 0 10px 0; color: #007bff;">${participant.Name}</h4>
             <p style="margin: 5px 0; color: #666;"><strong>📍 Местоположение:</strong> ${participant.Location}</p>
             <p style="margin: 5px 0; color: #666;"><strong>📅 Регистрация:</strong> ${new Date(participant.RegisteredAt).toLocaleDateString()}</p>
     `;
+
+    if (participant.Email) {
+        content += `<p style="margin: 5px 0; color: #666;"><strong>📧 Email:</strong> ${participant.Email}</p>`;
+    }
+
+    if (participant.Address) {
+        content += `<p style="margin: 5px 0; color: #666;"><strong>📍 Адрес:</strong> ${participant.Address}</p>`;
+    }
+
+    // Отображаем город и страну если они есть
+    const locationParts = [];
+    if (participant.City) {
+        locationParts.push(participant.City);
+    }
+    if (participant.Country) {
+        locationParts.push(participant.Country);
+    }
+    if (locationParts.length > 0) {
+        content += `<p style="margin: 5px 0; color: #666;"><strong>🌍 Местоположение:</strong> ${locationParts.join(', ')}</p>`;
+    } else if (participant.Location) {
+        content += `<p style="margin: 5px 0; color: #666;"><strong>🌍 Местоположение:</strong> ${participant.Location}</p>`;
+    }
+
+    if (participant.Latitude && participant.Longitude) {
+        content += `<p style="margin: 5px 0; color: #666;"><strong>🗺️ Координаты:</strong> ${participant.Latitude.toFixed(6)}, ${participant.Longitude.toFixed(6)}</p>`;
+    }
+
+    content += `<p style="margin: 5px 0; color: #666;"><strong>📅 Регистрация:</strong> ${new Date(participant.Timestamp || participant.RegisteredAt).toLocaleDateString()}</p>`;
 
     if (participant.Skills) {
         content += `<p style="margin: 5px 0; color: #666;"><strong>🛠 Навыки:</strong> ${participant.Skills}</p>`;
@@ -168,10 +196,18 @@ function createInfoWindowContent(participant) {
     if (participant.SocialContacts?.Vk) {
         socialLinks.push(`VK: ${participant.SocialContacts.Vk}`);
     }
+    if (participant.SocialContacts?.Website) {
+        socialLinks.push(`Website: ${participant.SocialContacts.Website}`);
+    }
+
+    // Также поддерживаем старое поле SocialMedia для обратной совместимости
+    if (participant.SocialMedia) {
+        socialLinks.push(participant.SocialMedia);
+    }
 
     if (socialLinks.length > 0) {
         content += `<p style="margin: 5px 0; color: #666;"><strong>🌐 Социальные сети:</strong></p>`;
-        content += `<p style="margin: 5px 0; padding-left: 10px; color: #666;">${socialLinks.join(', ')}</p>`;
+        content += `<p style="margin: 5px 0; padding-left: 10px; color: #666;">${socialLinks.join('<br>')}</p>`;
     }
 
     content += `</div>`;

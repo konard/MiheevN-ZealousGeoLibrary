@@ -47,11 +47,24 @@
                         </div>
                         <div class="participant-info">
                             <div class="participant-name">@participant.Name</div>
-                            <div class="participant-location">@participant.Address</div>
+                            @if (!string.IsNullOrEmpty(participant.Email))
+                            {
+                                <div class="participant-location" style="font-size: 0.75rem;">@participant.Email</div>
+                            }
                             @if (!string.IsNullOrEmpty(participant.City) || !string.IsNullOrEmpty(participant.Country))
                             {
                                 <div class="participant-location-details">
                                     @(participant.City ?? "")@(!string.IsNullOrEmpty(participant.City) && !string.IsNullOrEmpty(participant.Country) ? ", " : "")@(participant.Country ?? "")
+                                </div>
+                            }
+                            else if (!string.IsNullOrEmpty(participant.Address))
+                            {
+                                <div class="participant-location">@participant.Address</div>
+                            }
+                            @if (!string.IsNullOrEmpty(participant.Skills))
+                            {
+                                <div class="participant-location-details" style="font-size: 0.7rem; color: #4a5568;">
+                                    🛠 @(participant.Skills.Length > 30 ? participant.Skills.Substring(0, 30) + "..." : participant.Skills)
                                 </div>
                             }
                         </div>
@@ -72,12 +85,28 @@
                 <div class="modal-body">
                     <div class="participant-details">
                         <p><strong>Address:</strong> @SelectedParticipant.Address</p>
-                        <p><strong>Coordinates:</strong> @(SelectedParticipant.Latitude?.ToString("F6") ?? "N/A"), @(SelectedParticipant.Longitude?.ToString("F6") ?? "N/A")</p>
-                        <p><strong>Registration Date:</strong> @SelectedParticipant.RegisteredAt.ToString("dd.MM.yyyy HH:mm")</p>
+
+                        @if (!string.IsNullOrEmpty(SelectedParticipant.Email))
+                        {
+                            <p><strong>Email:</strong> @SelectedParticipant.Email</p>
+                        }
 
                         @if (!string.IsNullOrEmpty(SelectedParticipant.City) || !string.IsNullOrEmpty(SelectedParticipant.Country))
                         {
                             <p><strong>Location:</strong> @(SelectedParticipant.City ?? "")@(!string.IsNullOrEmpty(SelectedParticipant.City) && !string.IsNullOrEmpty(SelectedParticipant.Country) ? ", " : "")@(SelectedParticipant.Country ?? "")</p>
+                        }
+
+                        <p><strong>Coordinates:</strong> @(SelectedParticipant.Latitude?.ToString("F6") ?? "N/A"), @(SelectedParticipant.Longitude?.ToString("F6") ?? "N/A")</p>
+                        <p><strong>Registration Date:</strong> @SelectedParticipant.RegisteredAt.ToString("dd.MM.yyyy HH:mm")</p>
+
+                        @if (!string.IsNullOrEmpty(SelectedParticipant.Skills))
+                        {
+                            <p><strong>Skills:</strong> @SelectedParticipant.Skills</p>
+                        }
+
+                        @if (!string.IsNullOrEmpty(SelectedParticipant.LifeGoals))
+                        {
+                            <p><strong>Life Goals:</strong> @SelectedParticipant.LifeGoals</p>
                         }
 
                         @if (!string.IsNullOrEmpty(SelectedParticipant.Message))
@@ -88,6 +117,33 @@
                         @if (!string.IsNullOrEmpty(SelectedParticipant.SocialMedia))
                         {
                             <p><strong>Social Media:</strong> @SelectedParticipant.SocialMedia</p>
+                        }
+
+                        @if (SelectedParticipant.SocialContacts != null &&
+                            (!string.IsNullOrEmpty(SelectedParticipant.SocialContacts.Discord) ||
+                             !string.IsNullOrEmpty(SelectedParticipant.SocialContacts.Telegram) ||
+                             !string.IsNullOrEmpty(SelectedParticipant.SocialContacts.Vk) ||
+                             !string.IsNullOrEmpty(SelectedParticipant.SocialContacts.Website)))
+                        {
+                            <p><strong>Social Contacts:</strong></p>
+                            <div style="padding-left: 20px;">
+                                @if (!string.IsNullOrEmpty(SelectedParticipant.SocialContacts.Discord))
+                                {
+                                    <p>Discord: @SelectedParticipant.SocialContacts.Discord</p>
+                                }
+                                @if (!string.IsNullOrEmpty(SelectedParticipant.SocialContacts.Telegram))
+                                {
+                                    <p>Telegram: @SelectedParticipant.SocialContacts.Telegram</p>
+                                }
+                                @if (!string.IsNullOrEmpty(SelectedParticipant.SocialContacts.Vk))
+                                {
+                                    <p>VK: @SelectedParticipant.SocialContacts.Vk</p>
+                                }
+                                @if (!string.IsNullOrEmpty(SelectedParticipant.SocialContacts.Website))
+                                {
+                                    <p>Website: @SelectedParticipant.SocialContacts.Website</p>
+                                }
+                            </div>
                         }
                     </div>
                 </div>
